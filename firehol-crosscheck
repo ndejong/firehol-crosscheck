@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Provide the path to your local git clone from https://github.com/firehol/blocklist-ipsets
+firehol_blocklist_path='/full/path/here/blocklist-ipsets'
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $(basename ${0}) <ipaddress-filename>"
+  exit 1
+fi
+
+if [ ! -f "${1}" ]; then
+  echo "ERROR: unable to locate ipaddress-filename at ${1}"
+  exit 1
+fi
+
+if [ ! -d "${firehol_blocklist_path}" ]; then
+  echo "ERROR: unable to locate firehol_blocklist_path at ${firehol_blocklist_path}"
+  exit 1
+fi
+
+ipaddr_filename="${1}"
+
+while read ipaddr; do
+	echo -n "${ipaddr}"
+  firehol_hits=$(grep "${ipaddr}" ${firehol_blocklist_path}/*.ipset | cut -d':' -f1 | rev | cut -d'/' -f1 | rev | cut -d'.' -f1 | sort -u | sort -n)
+  firehol_hit_count=$(echo "${firehol_hits}" | wc -l)
+  firehol_hit_list=$(echo -n "${firehol_hits}" | tr "\n" ",")
+
+  if [ "${firehol_hits}" == "" ]; then
+    echo " :: 0"
+  else
+    echo " :: ${firehol_hit_count} :: ${firehol_hit_list}"
+  fi
+
+done <"${ipaddr_filename}"
